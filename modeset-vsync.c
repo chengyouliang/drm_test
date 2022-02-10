@@ -233,27 +233,27 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	/* copy the mode information into our device structure and into both
 	 * buffers */
 	memcpy(&dev->mode, &conn->modes[mode], sizeof(dev->mode));
-/*
+#if 1
 	dev->bufs[0].width = conn->modes[mode].hdisplay;
 	dev->bufs[0].height = conn->modes[mode].vdisplay;
 	dev->bufs[1].width = conn->modes[mode].hdisplay;
 	dev->bufs[1].height = conn->modes[mode].vdisplay;
-*/
-	dev->mode.hdisplay = 1900;
-	dev->mode.hsync_start = 2016;
-	dev->mode.hsync_end = 2216;
-	dev->mode.htotal = 2528;
-	dev->mode.vdisplay = 963;
-	dev->mode.vsync_start = 966;
-	dev->mode.vsync_end = 976;
-	dev->mode.vtotal = 999;
-	dev->bufs[0].width = 1900;
-	dev->bufs[0].height = 963;
-	dev->bufs[1].width = 1900;
-	dev->bufs[1].height = 963;
+#else
+	dev->mode.hdisplay = 1920;
+	dev->mode.hsync_start = 2008;
+	dev->mode.hsync_end = 2052;
+	dev->mode.htotal = 2200;
+	dev->mode.vdisplay = 1080;
+	dev->mode.vsync_start = 1084;
+	dev->mode.vsync_end = 1089;
+	dev->mode.vtotal = 1125;
+	dev->bufs[0].width = 1920;
+	dev->bufs[0].height = 1080;
+	dev->bufs[1].width = 1920;
+	dev->bufs[1].height = 1080;
 	fprintf(stderr, "mode for connector %u is %ux%u\n",
 		conn->connector_id, dev->bufs[0].width, dev->bufs[0].height);
-
+#endif
 	/* find a crtc for this connector */
 	ret = modeset_find_crtc(fd, res, conn, dev);
 	if (ret) {
@@ -604,6 +604,7 @@ static void modeset_draw(int fd)
 
 	/* redraw all outputs */
 	for (iter = modeset_list; iter; iter = iter->next) {
+		printf("%s %d\n",__FUNCTION__,__LINE__);
 		iter->r = rand() % 0xff;
 		iter->g = rand() % 0xff;
 		iter->b = rand() % 0xff;
@@ -611,7 +612,7 @@ static void modeset_draw(int fd)
 
 		modeset_draw_dev(fd, iter);
 	}
-
+#if 1
 	/* wait 5s for VBLANK or input events */
 	while (time(&cur) < start + 5) {
 		FD_SET(0, &fds);
@@ -629,6 +630,11 @@ static void modeset_draw(int fd)
 			drmHandleEvent(fd, &ev);
 		}
 	}
+#else
+	 while (1) {
+		drmHandleEvent(fd, &ev);
+	}
+#endif
 }
 
 /*
@@ -696,7 +702,9 @@ static void modeset_draw_dev(int fd, struct modeset_dev *dev)
 	dev->g = next_color(&dev->g_up, dev->g, 10);
 	dev->b = next_color(&dev->b_up, dev->b, 5);
 
+
 	buf = &dev->bufs[dev->front_buf ^ 1];
+	
 	for (j = 0; j < buf->height; ++j) {
 		for (k = 0; k < buf->width; ++k) {
 			off = buf->stride * j + k * 4;
@@ -714,6 +722,7 @@ static void modeset_draw_dev(int fd, struct modeset_dev *dev)
 		dev->front_buf ^= 1;
 		dev->pflip_pending = true;
 	}
+	sleep(1);
 }
 
 /*
